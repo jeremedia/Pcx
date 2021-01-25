@@ -1,0 +1,27 @@
+﻿#pragma kernel Main
+
+#include "HLSLSupport.cginc"
+#include "Packages/jp.keijiro.pcx/Runtime/Shaders/Common.cginc"
+
+StructuredBuffer<float4> SourceBuffer;
+AppendStructuredBuffer<float4> OutputBuffer;
+
+CBUFFER_START(Params)
+    float3 clipMin;
+    float3 clipMax;
+CBUFFER_END
+
+[numthreads(128, 1, 1)]
+void Main (uint id : SV_DispatchThreadID)
+{
+    float4 pt = SourceBuffer[id];
+
+    float3 p = pt.xyz;
+    half3 c = PcxDecodeColor(asuint(pt.w));
+    if( p.x > clipMin.x && p.x < clipMax.x &&
+        p.y > clipMin.y && p.y < clipMax.y &&
+        p.z > clipMin.z && p.z < clipMax.z )
+    {
+        OutputBuffer.Append(float4(p, asfloat(PcxEncodeColor(c) ) ) ); // keep the point
+    }
+}
