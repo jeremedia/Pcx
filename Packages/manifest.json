@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.unity.ide.vscode": "1.2.3",
     "com.unity.timeline": "1.4.2",
     "com.unity.modules.imgui": "1.0.0"
   }
