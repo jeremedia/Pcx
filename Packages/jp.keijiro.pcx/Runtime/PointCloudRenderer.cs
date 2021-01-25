@@ -106,6 +106,29 @@ namespace Pcx
             var pointBuffer = sourceBuffer != null ?
                 sourceBuffer : _sourceData.computeBuffer;
 
+            int pointBufferCount;
+            if (sourceBuffer != null)
+            {
+                pointBufferCount = sourceBuffer.count;
+
+                // https://sites.google.com/site/aliadevlog/counting-buffers-in-directcompute
+                ComputeBuffer countBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.IndirectArguments);
+                ComputeBuffer.CopyCount(sourceBuffer, countBuffer, 0);
+                int[] counter = new int[1] { 0 };
+                countBuffer.GetData(counter);
+                if (counter[0] > 0)
+                {
+                    // is there a way to check if it's an append buffer?
+                    pointBufferCount = counter[0];
+                }
+
+                countBuffer.Dispose();
+            }
+            else
+            {
+                pointBufferCount = pointBuffer.count;
+            }
+
             if (_pointSize == 0)
             {
                 _pointMaterial.SetPass(0);
@@ -113,9 +136,9 @@ namespace Pcx
                 _pointMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
                 _pointMaterial.SetBuffer("_PointBuffer", pointBuffer);
                 #if UNITY_2019_1_OR_NEWER
-                Graphics.DrawProceduralNow(MeshTopology.Points, pointBuffer.count, 1);
+                Graphics.DrawProceduralNow(MeshTopology.Points, pointBufferCount, 1);
                 #else
-                Graphics.DrawProcedural(MeshTopology.Points, pointBuffer.count, 1);
+                Graphics.DrawProcedural(MeshTopology.Points, pointBufferCount, 1);
                 #endif
             }
             else
@@ -126,9 +149,9 @@ namespace Pcx
                 _diskMaterial.SetBuffer("_PointBuffer", pointBuffer);
                 _diskMaterial.SetFloat("_PointSize", pointSize);
                 #if UNITY_2019_1_OR_NEWER
-                Graphics.DrawProceduralNow(MeshTopology.Points, pointBuffer.count, 1);
+                Graphics.DrawProceduralNow(MeshTopology.Points, pointBufferCount, 1);
                 #else
-                Graphics.DrawProcedural(MeshTopology.Points, pointBuffer.count, 1);
+                Graphics.DrawProcedural(MeshTopology.Points, pointBufferCount, 1);
                 #endif
             }
         }
