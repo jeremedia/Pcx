@@ -9,6 +9,9 @@ public class PointCliper : MonoBehaviour
 
     [SerializeField, Tooltip("Axis aligned bounding box to clip")]
     Bounds clipAABB = new Bounds(Vector3.zero, Vector3.one);
+
+    // TODO: support clipping planes
+    // https://gamedevelopment.tutsplus.com/tutorials/understanding-sutherland-hodgman-clipping-for-physics-engines--gamedev-11917
     
     static readonly int
         clipAABBMinID = Shader.PropertyToID("_clipAABBMin"),
