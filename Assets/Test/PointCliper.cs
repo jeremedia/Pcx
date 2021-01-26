@@ -5,9 +5,16 @@ using Pcx;
 public class PointCliper : MonoBehaviour
 {
     [SerializeField] PointCloudData _sourceData = null;
-    [SerializeField] ComputeShader _computeShader = null;
+    [SerializeField] ComputeShader _computeShader = default;
 
-    [SerializeField] Bounds clipBounds;
+    [SerializeField, Tooltip("Axis aligned bounding box to clip")]
+    Bounds clipAABB = new Bounds(Vector3.zero, Vector3.one);
+    
+    static readonly int
+        clipAABBMinID = Shader.PropertyToID("_clipAABBMin"),
+        clipAABBMaxID = Shader.PropertyToID("_clipAABBMax"),
+        sourceBufferID = Shader.PropertyToID("_sourceBuffer"),
+        outputBufferID = Shader.PropertyToID("_outputBuffer");
 
     ComputeBuffer _pointBuffer;
     void Update()
@@ -24,11 +31,12 @@ public class PointCliper : MonoBehaviour
         
         _pointBuffer.SetCounterValue(0);
         
-        var kernel = _computeShader.FindKernel("Main");
-        _computeShader.SetVector ("clipMin", clipBounds.min);
-        _computeShader.SetVector ("clipMax", clipBounds.max);
-        _computeShader.SetBuffer(kernel, "SourceBuffer", sourceBuffer);
-        _computeShader.SetBuffer(kernel, "OutputBuffer", _pointBuffer);
+        var kernel = _computeShader.FindKernel("ClipAABB");
+        _computeShader.SetVector (clipAABBMinID, clipAABB.min);
+        _computeShader.SetVector (clipAABBMaxID, clipAABB.max);
+        _computeShader.SetBuffer (kernel, sourceBufferID, sourceBuffer);
+        _computeShader.SetBuffer (kernel, outputBufferID, _pointBuffer);
+        
         _computeShader.Dispatch(kernel, sourceBuffer.count / 128, 1, 1);
 
 
