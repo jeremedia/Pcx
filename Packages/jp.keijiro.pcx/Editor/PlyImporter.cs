@@ -179,6 +179,7 @@ namespace Pcx
                     MeshTopology.Points, 0
                 );
 
+                // todo: allow read/write enabled by setting bool to false
                 mesh.UploadMeshData(true);
                 return mesh;
             }
