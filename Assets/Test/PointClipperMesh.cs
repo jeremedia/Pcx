@@ -14,56 +14,65 @@ public class PointClipperMesh : MonoBehaviour
 
     void OnEnable()
     {
+        // initialize native arrays with mesh data
         _mesh = GetComponent<MeshFilter>().mesh;
-        _indices = new NativeArray<int>(_mesh.vertexCount / decimator, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-
-        UpdateMesh();
+        _indices = new NativeArray<int>(_mesh.vertexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+        using(var dataArray = Mesh.AcquireReadOnlyMeshData(_mesh))
+        {
+            var data = dataArray[0];
+            _vertices = new NativeArray<Vector3>(_mesh.vertexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            data.GetVertices(_vertices);
+        }
     }
     void OnDisable()
     {
-        // _vertices.Dispose();
+        _vertices.Dispose();
         _indices.Dispose();
     }
-    public int decimator = 1;
+    
     void Update()
     {
-        // dont create a new array here. probably need a native list
-        // _indices.Dispose();
-        _indices = new NativeArray<int>(_mesh.vertexCount / decimator, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-        UpdateMesh();
+        var job = new ClipAABBJob { verticse = _vertices, indices = _indices, clipAABBMin = clipAABB.min, clipAABBMax = clipAABB.max };
+        
+        job.Schedule(_vertices.Length, 16).Complete(); // todo: use _vertices length ?
 
-        // _indices = new NativeArray<int>(_mesh.vertexCount / decimator, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-        // for (int i = 0; i < _mesh.vertexCount / decimator; i++)
-        // {
-        //     _indices[i] = i * decimator;
-        // }
-        // _mesh.SetIndices(_indices, MeshTopology.Points, 0);
-
-
-        // var job = new ClipAABBJob { indices = _indices, clipAABBMin = clipAABB.min, clipAABBMax = clipAABB.max };
-        // _mesh.SetIndices(_indices, MeshTopology.Points, 0);
-    }
-
-    // [BurstCompile]
-    // struct ClipAABBJob : IJobParallelFor
-    // {
-    //     [ReadOnly] public NativeArray<Vector3> verticse;
-    //     public NativeArray<int> indices;
-    //     public Vector3 clipAABBMin;
-    //     public Vector3 clipAABBMax;
-	// 	public void Execute(int index)
-	// 	{
-
-	// 	}
-    // }
-    Mesh UpdateMesh()
-    {
-        for (int i = 0; i < _mesh.vertexCount / decimator; i++)
-        {
-            _indices[i] = i * decimator;
-        }
         _mesh.SetIndices(_indices, MeshTopology.Points, 0);
-
-        return _mesh;
     }
+
+    [BurstCompile]
+    struct ClipAABBJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<Vector3> verticse;
+        public NativeArray<int> indices;
+        public Vector3 clipAABBMin;
+        public Vector3 clipAABBMax;
+		public void Execute(int i)
+		{
+            int index = i; // = indices[i];
+            Vector3 pt = verticse[index];
+            if( pt.x > clipAABBMin.x && pt.x < clipAABBMax.x &&
+                pt.y > clipAABBMin.y && pt.y < clipAABBMax.y &&
+                pt.z > clipAABBMin.z && pt.z < clipAABBMax.z )
+            {
+                // append / keep
+                // probably need a native list to resize indices
+                indices[i] = i;
+            }
+            else
+            {
+                // discard
+                indices[i] = 0;
+            }
+		}
+    }
+    // Mesh UpdateMesh()
+    // {
+    //     for (int i = 0; i < _mesh.vertexCount / decimator; i++)
+    //     {
+    //         _indices[i] = i * decimator;
+    //     }
+    //     _mesh.SetIndices(_indices, MeshTopology.Points, 0);
+
+    //     return _mesh;
+    // }
 }

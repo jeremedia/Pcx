@@ -297,8 +297,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   clipAABB:
     m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0.5, y: 0.5, z: 0.5}
-  decimator: 1
+    m_Extent: {x: 6.77, y: 6, z: 6.9}
 --- !u!1 &2045914058
 GameObject:
   m_ObjectHideFlags: 0
