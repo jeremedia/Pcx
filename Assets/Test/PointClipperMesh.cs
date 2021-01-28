@@ -1,14 +1,19 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
+
+using static Unity.Mathematics.math;
+using float4x4 = Unity.Mathematics.float4x4;
+using quaternion = Unity.Mathematics.quaternion;
 
 public class PointClipperMesh : MonoBehaviour
 {
     [SerializeField, Tooltip("Axis aligned bounding box to clip")]
     Bounds clipAABB = new Bounds(Vector3.zero, Vector3.one);
     
-    NativeArray<Vector3> _vertices;
+    NativeArray<float3> _vertices;
     NativeList<int> _indices;
 
     Mesh _mesh;
@@ -20,8 +25,8 @@ public class PointClipperMesh : MonoBehaviour
         using(var dataArray = Mesh.AcquireReadOnlyMeshData(_mesh))
         {
             var data = dataArray[0];
-            _vertices = new NativeArray<Vector3>(_mesh.vertexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            data.GetVertices(_vertices);
+            _vertices = new NativeArray<float3>(_mesh.vertexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            data.GetVertices(_vertices.Reinterpret<Vector3>());
         }
         _indices = new NativeList<int>(_mesh.vertexCount, Allocator.Persistent);
     }
@@ -49,13 +54,13 @@ public class PointClipperMesh : MonoBehaviour
     [BurstCompile]
     struct ClipAABBJob : IJobFor
     {
-        [ReadOnly] public NativeArray<Vector3> verticse;
+        [ReadOnly] public NativeArray<float3> verticse;
         [WriteOnly] public NativeList<int> indices;
-        [ReadOnly] public Vector3 clipAABBMin;
-        [ReadOnly] public Vector3 clipAABBMax;
+        [ReadOnly] public float3 clipAABBMin;
+        [ReadOnly] public float3 clipAABBMax;
 		public void Execute(int index)
 		{
-            Vector3 pt = verticse[index];
+            float3 pt = verticse[index];
             if( pt.x > clipAABBMin.x && pt.x < clipAABBMax.x &&
                 pt.y > clipAABBMin.y && pt.y < clipAABBMax.y &&
                 pt.z > clipAABBMin.z && pt.z < clipAABBMax.z )
