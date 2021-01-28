@@ -21,6 +21,7 @@ public class PointClipperMesh : MonoBehaviour
             _vertices = new NativeArray<Vector3>(_mesh.vertexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             data.GetVertices(_vertices);
         }
+        Debug.Log("there are " + _vertices.Length + " verts");
     }
     void OnDisable()
     {
@@ -29,38 +30,35 @@ public class PointClipperMesh : MonoBehaviour
     
     void Update()
     {
-        NativeArray<int> indices = new NativeArray<int>(_vertices.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+        NativeList<int> indices = new NativeList<int>(1, Allocator.TempJob);
         var job = new ClipAABBJob { verticse = _vertices, indices = indices, clipAABBMin = clipAABB.min, clipAABBMax = clipAABB.max };
         
-        job.Schedule(_vertices.Length, 16).Complete();
+        job.Schedule(_vertices.Length, default).Complete();
 
-        _mesh.SetIndices(indices, MeshTopology.Points, 0);
+        // for(int i=0; i<_vertices.Length; i++)
+        // {
+        //     job.Execute(i);
+        // }
+
+        _mesh.SetIndices(indices.AsArray(), MeshTopology.Points, 0);
         indices.Dispose();
     }
 
     [BurstCompile]
-    struct ClipAABBJob : IJobParallelFor
+    struct ClipAABBJob : IJobFor
     {
         [ReadOnly] public NativeArray<Vector3> verticse;
-        public NativeArray<int> indices;
-        public Vector3 clipAABBMin;
-        public Vector3 clipAABBMax;
-		public void Execute(int i)
+        [WriteOnly] public NativeList<int> indices;
+        [ReadOnly] public Vector3 clipAABBMin;
+        [ReadOnly] public Vector3 clipAABBMax;
+		public void Execute(int index)
 		{
-            int index = i; // = indices[i];
             Vector3 pt = verticse[index];
             if( pt.x > clipAABBMin.x && pt.x < clipAABBMax.x &&
                 pt.y > clipAABBMin.y && pt.y < clipAABBMax.y &&
                 pt.z > clipAABBMin.z && pt.z < clipAABBMax.z )
             {
-                // append / keep
-                // probably need a native list to resize indices
-                indices[i] = i;
-            }
-            else
-            {
-                // discard
-                indices[i] = 0;
+                indices.Add(index);
             }
 		}
     }
