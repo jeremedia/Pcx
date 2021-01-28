@@ -9,6 +9,8 @@ public class PointClipperMesh : MonoBehaviour
     Bounds clipAABB = new Bounds(Vector3.zero, Vector3.one);
     
     NativeArray<Vector3> _vertices;
+    NativeList<int> _indices;
+
     Mesh _mesh;
 
     void OnEnable()
@@ -21,17 +23,18 @@ public class PointClipperMesh : MonoBehaviour
             _vertices = new NativeArray<Vector3>(_mesh.vertexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             data.GetVertices(_vertices);
         }
-        Debug.Log("there are " + _vertices.Length + " verts");
+        _indices = new NativeList<int>(_mesh.vertexCount, Allocator.Persistent);
     }
     void OnDisable()
     {
         _vertices.Dispose();
+        _indices.Dispose();
     }
     
     void Update()
     {
-        NativeList<int> indices = new NativeList<int>(1, Allocator.TempJob);
-        var job = new ClipAABBJob { verticse = _vertices, indices = indices, clipAABBMin = clipAABB.min, clipAABBMax = clipAABB.max };
+        _indices.Clear();
+        var job = new ClipAABBJob { verticse = _vertices, indices = _indices, clipAABBMin = clipAABB.min, clipAABBMax = clipAABB.max };
         
         job.Schedule(_vertices.Length, default).Complete();
 
@@ -40,8 +43,7 @@ public class PointClipperMesh : MonoBehaviour
         //     job.Execute(i);
         // }
 
-        _mesh.SetIndices(indices.AsArray(), MeshTopology.Points, 0);
-        indices.Dispose();
+        _mesh.SetIndices(_indices.AsArray(), MeshTopology.Points, 0);
     }
 
     [BurstCompile]
