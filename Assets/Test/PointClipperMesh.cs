@@ -8,6 +8,7 @@ using static Unity.Mathematics.math;
 using float4x4 = Unity.Mathematics.float4x4;
 using quaternion = Unity.Mathematics.quaternion;
 
+[ExecuteInEditMode]
 public class PointClipperMesh : MonoBehaviour
 {
     [SerializeField, Tooltip("Axis aligned bounding box to clip")]
@@ -21,7 +22,7 @@ public class PointClipperMesh : MonoBehaviour
     void OnEnable()
     {
         // initialize native arrays with mesh data
-        _mesh = GetComponent<MeshFilter>().mesh;
+        _mesh = GetComponent<MeshFilter>().sharedMesh;
         using(var dataArray = Mesh.AcquireReadOnlyMeshData(_mesh))
         {
             var data = dataArray[0];
