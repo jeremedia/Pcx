@@ -16,6 +16,8 @@ public class PointClipperMesh : MonoBehaviour
     NativeArray<float3> _vertices;
     NativeList<int> _indices;
 
+    JobHandle jobHandle;
+
     Mesh _mesh;
 
     void OnEnable()
@@ -41,13 +43,19 @@ public class PointClipperMesh : MonoBehaviour
         _indices.Clear();
         var job = new ClipAABBJob { verticse = _vertices, indices = _indices, clipAABBMin = clipAABB.min, clipAABBMax = clipAABB.max };
         
-        job.Schedule(_vertices.Length, default).Complete();
+        jobHandle = job.Schedule(_vertices.Length, default);
+        // jobHandle.Complete();
+        // _mesh.SetIndices(_indices.AsArray(), MeshTopology.Points, 0);
 
         // for(int i=0; i<_vertices.Length; i++)
         // {
         //     job.Execute(i);
         // }
+    }
 
+    void LateUpdate()
+    {
+        jobHandle.Complete();
         _mesh.SetIndices(_indices.AsArray(), MeshTopology.Points, 0);
     }
 
