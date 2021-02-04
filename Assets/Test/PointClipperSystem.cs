@@ -25,6 +25,8 @@ public class PointClipperSystem : MonoBehaviour
     {
         if (!_mesheEntitiesSet.Contains(m))
         {
+            // todo: need the _worldToLocal of the transform the mesh is attached to. and it should be updated whenever the transform is moved if it's not static
+            // should i be using entities??
             using(var dataArray = Mesh.AcquireReadOnlyMeshData(m))
             {
                 var data = dataArray[0];
@@ -56,6 +58,7 @@ public class PointClipperSystem : MonoBehaviour
         foreach (Mesh m in _mesheEntitiesSet)
         {
             _indicesDict[m].Clear();
+            // todo: transform clip bounds from world to local space using worldtolocal
             var job = new ClipAABBJob { verticse = _verticesDict[m], indices = _indicesDict[m], clipAABBMin = clipAABB.min, clipAABBMax = clipAABB.max };
             jobHandles.Add(job.Schedule(_verticesDict[m].Length, default));
         }
