@@ -10,20 +10,41 @@ using static Unity.Mathematics.math;
 using float4x4 = Unity.Mathematics.float4x4;
 using quaternion = Unity.Mathematics.quaternion;
 
+[DefaultExecutionOrder(-100)]
 public class PointClipperSystem : MonoBehaviour
 {
     [SerializeField, Tooltip("Axis aligned bounding box to clip")]
     Bounds clipAABB = new Bounds(Vector3.zero, Vector3.one);
 
-    static HashSet<Mesh> _mesheEntitiesSet = new HashSet<Mesh>();
-    static Dictionary<Mesh, NativeArray<float3>> _verticesDict = new Dictionary<Mesh, NativeArray<float3>>();
-    static Dictionary<Mesh, NativeList<int>> _indicesDict = new Dictionary<Mesh, NativeList<int>>();
+    HashSet<Mesh> _mesheEntitiesSet = new HashSet<Mesh>();
+    Dictionary<Mesh, NativeArray<float3>> _verticesDict = new Dictionary<Mesh, NativeArray<float3>>();
+    Dictionary<Mesh, NativeList<int>> _indicesDict = new Dictionary<Mesh, NativeList<int>>();
 
     List<JobHandle> jobHandles = new List<JobHandle>();
 
+
+    // ugly singleton
+    public static PointClipperSystem instance { get; private set; }
+    void Awake()
+    {
+        if(instance != null)
+        {
+            Debug.LogWarning("expecting singleton");
+        }
+        instance = this;
+        Debug.Log("PointClipper initialized");
+    }
+    // void OnDestroy()
+    // {
+    //     if(instance == this)
+    //     {
+    //         instance = null;
+    //     }
+    // }
+
     public static void AddMesh(Mesh m)
     {
-        if (!_mesheEntitiesSet.Contains(m))
+        if (!instance._mesheEntitiesSet.Contains(m))
         {
             // todo: need the _worldToLocal of the transform the mesh is attached to. and it should be updated whenever the transform is moved if it's not static
             // should i be using entities??
@@ -32,23 +53,23 @@ public class PointClipperSystem : MonoBehaviour
                 var data = dataArray[0];
                 NativeArray<float3> vertices = new NativeArray<float3>(m.vertexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                 data.GetVertices(vertices.Reinterpret<Vector3>());
-                _verticesDict.Add(m, vertices);
+                instance._verticesDict.Add(m, vertices);
             }
             NativeList<int> indices = new NativeList<int>(m.vertexCount, Allocator.Persistent);
-            _indicesDict.Add(m, indices);
-            _mesheEntitiesSet.Add(m);
+            instance._indicesDict.Add(m, indices);
+            instance._mesheEntitiesSet.Add(m);
         }
     }
 
     public static void RemoveMesh(Mesh m)
     {
-        if (_mesheEntitiesSet.Contains(m))
+        if (instance._mesheEntitiesSet.Contains(m))
         {
-            _verticesDict[m].Dispose();
-            _verticesDict.Remove(m);
-            _indicesDict[m].Dispose();
-            _indicesDict.Remove(m);
-            _mesheEntitiesSet.Remove(m);
+            instance._verticesDict[m].Dispose();
+            instance._verticesDict.Remove(m);
+            instance._indicesDict[m].Dispose();
+            instance._indicesDict.Remove(m);
+            instance._mesheEntitiesSet.Remove(m);
         }
     }
 
