@@ -17,6 +17,10 @@ public class PointClipperSystem : MonoBehaviour
     Bounds clipAABB = new Bounds(Vector3.zero, Vector3.one);
 
     HashSet<Mesh> _mesheEntitiesSet = new HashSet<Mesh>();
+
+    // used for clipping world space box. assuming the transform is neither moved nor rotated.
+    Dictionary<Mesh, Vector3> _positionDict = new Dictionary<Mesh, Vector3>();
+
     Dictionary<Mesh, NativeArray<float3>> _verticesDict = new Dictionary<Mesh, NativeArray<float3>>();
     Dictionary<Mesh, NativeList<int>> _indicesDict = new Dictionary<Mesh, NativeList<int>>();
 
@@ -42,12 +46,14 @@ public class PointClipperSystem : MonoBehaviour
     //     }
     // }
 
-    public static void AddMesh(Mesh m)
+    public static void AddMesh(Mesh m, Vector3 position)
     {
         if (!instance._mesheEntitiesSet.Contains(m))
         {
             // todo: need the _worldToLocal of the transform the mesh is attached to. and it should be updated whenever the transform is moved if it's not static
             // should i be using entities??
+            instance._positionDict.Add(m, position);
+
             using(var dataArray = Mesh.AcquireReadOnlyMeshData(m))
             {
                 var data = dataArray[0];
@@ -65,6 +71,7 @@ public class PointClipperSystem : MonoBehaviour
     {
         if (instance._mesheEntitiesSet.Contains(m))
         {
+            instance._positionDict.Remove(m);
             instance._verticesDict[m].Dispose();
             instance._verticesDict.Remove(m);
             instance._indicesDict[m].Dispose();
@@ -80,7 +87,7 @@ public class PointClipperSystem : MonoBehaviour
         {
             _indicesDict[m].Clear();
             // todo: transform clip bounds from world to local space using worldtolocal
-            var job = new ClipAABBJob { verticse = _verticesDict[m], indices = _indicesDict[m], clipAABBMin = clipAABB.min, clipAABBMax = clipAABB.max };
+            var job = new ClipAABBJob { verticse = _verticesDict[m], indices = _indicesDict[m], clipAABBMin = clipAABB.min - _positionDict[m], clipAABBMax = clipAABB.max  - _positionDict[m]};
             jobHandles.Add(job.Schedule(_verticesDict[m].Length, default));
         }
     }

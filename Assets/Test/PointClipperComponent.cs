@@ -6,7 +6,7 @@ public class PointClipperComponent : MonoBehaviour
     
     void OnEnable()
     {
-        PointClipperSystem.AddMesh (GetComponent<MeshFilter>().mesh);
+        PointClipperSystem.AddMesh (GetComponent<MeshFilter>().mesh, transform.position);
     }
     void OnDisable()
     {
