@@ -9,6 +9,7 @@ using UnityEditor.AssetImporters;
 #else
 using UnityEditor.Experimental.AssetImporters;
 #endif
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,8 +17,8 @@ using System.Linq;
 
 namespace Pcx
 {
-    [UnityEditor.AssetImporters.ScriptedImporter(1, "ply")]
-    class PlyImporter : UnityEditor.AssetImporters.ScriptedImporter
+    [ScriptedImporter(1, "ply")]
+    class PlyImporter : ScriptedImporter
     {
         #region ScriptedImporter implementation
 
@@ -26,7 +27,7 @@ namespace Pcx
         [SerializeField] ContainerType _containerType = ContainerType.Mesh;
         [SerializeField] bool _readWriteEnabled = false;
 
-        public override void OnImportAsset(UnityEditor.AssetImporters.AssetImportContext context)
+        public override void OnImportAsset(AssetImportContext context)
         {
             if (_containerType == ContainerType.Mesh)
             {
@@ -177,9 +178,8 @@ namespace Pcx
                 mesh.SetVertices(body.vertices);
                 mesh.SetColors(body.colors);
 
-                int decimator = 1; // 1 to render every point, 2 every second, the higher the less points are rendered
                 mesh.SetIndices(
-                    Enumerable.Range(0, header.vertexCount/decimator).Select(x => x * decimator).ToArray(),
+                    Enumerable.Range(0, header.vertexCount).ToArray(),
                     MeshTopology.Points, 0
                 );
 

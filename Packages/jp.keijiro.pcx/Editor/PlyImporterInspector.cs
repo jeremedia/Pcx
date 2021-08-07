@@ -15,7 +15,7 @@ namespace Pcx
     // so it has been replaced with a normal Popup control.
 
     [CustomEditor(typeof(PlyImporter))]
-    class PlyImporterInspector : UnityEditor.AssetImporters.ScriptedImporterEditor
+    class PlyImporterInspector : ScriptedImporterEditor
     {
         SerializedProperty _containerType;
         SerializedProperty _readWriteEnabled;
