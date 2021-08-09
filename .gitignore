@@ -8,14 +8,16 @@ Desktop.ini
 # Vim
 *.swp
 
-#  VS Code
-.vscode/
+# Visual Studio Code
+.vscode
 
 # Unity
-/Library
-/Logs
-/Temp
-/UserSettings
+/[Ll]ibrary
+/[Ll]ogs
+/[Tt]emp
+/[Oo]bj
+/[Uu]ser[Ss]ettings
+
 
 /Extras/pcx-strip/*.o
 /Extras/pcx-strip/pcx-strip

@@ -1,0 +1,19 @@
+﻿#pragma kernel ClipAABB
+
+StructuredBuffer<float4> _sourceBuffer;
+AppendStructuredBuffer<float4> _outputBuffer;
+
+float3 _clipAABBMin;
+float3 _clipAABBMax;
+
+[numthreads(128, 1, 1)]
+void ClipAABB (uint id : SV_DispatchThreadID)
+{
+    float4 pt = _sourceBuffer[id];
+    if( pt.x > _clipAABBMin.x && pt.x < _clipAABBMax.x &&
+        pt.y > _clipAABBMin.y && pt.y < _clipAABBMax.y &&
+        pt.z > _clipAABBMin.z && pt.z < _clipAABBMax.z )
+    {
+        _outputBuffer.Append(pt); // keep the point
+    }
+}
