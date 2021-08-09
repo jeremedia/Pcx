@@ -6,6 +6,8 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
+using System.Linq;
+
 using static Unity.Mathematics.math;
 using float4x4 = Unity.Mathematics.float4x4;
 using quaternion = Unity.Mathematics.quaternion;
@@ -15,6 +17,11 @@ public class PointClipperSystem : MonoBehaviour
 {
     [SerializeField, Tooltip("Axis aligned bounding box to clip")]
     Bounds clipAABB = new Bounds(Vector3.zero, Vector3.one);
+
+    /// <summary>
+    /// should be set to true whenever the points ned to be reclipped
+    /// </summary>
+    bool needUpdate = false;
 
     HashSet<Mesh> _mesheEntitiesSet = new HashSet<Mesh>();
 
@@ -46,6 +53,11 @@ public class PointClipperSystem : MonoBehaviour
     //     }
     // }
 
+    void OnValidate()
+    {
+        needUpdate = true;
+    }
+
     public static void AddMesh(Mesh m, Vector3 position)
     {
         if (!instance._mesheEntitiesSet.Contains(m))
@@ -64,6 +76,8 @@ public class PointClipperSystem : MonoBehaviour
             NativeList<int> indices = new NativeList<int>(m.vertexCount, Allocator.Persistent);
             instance._indicesDict.Add(m, indices);
             instance._mesheEntitiesSet.Add(m);
+
+            instance.needUpdate = true;
         }
     }
 
@@ -77,12 +91,19 @@ public class PointClipperSystem : MonoBehaviour
             instance._indicesDict[m].Dispose();
             instance._indicesDict.Remove(m);
             instance._mesheEntitiesSet.Remove(m);
+
+            // reset indices to include all points
+            m.SetIndices(
+                    Enumerable.Range(0, m.vertexCount).ToArray(),
+                    MeshTopology.Points, 0
+                );
         }
     }
 
     void Update()
     {
-        jobHandles.Clear();
+        if(!needUpdate) return;
+
         foreach (Mesh m in _mesheEntitiesSet)
         {
             _indicesDict[m].Clear();
@@ -94,14 +115,20 @@ public class PointClipperSystem : MonoBehaviour
 
     void LateUpdate()
     {
+        if(!needUpdate) return;
+
         foreach(JobHandle handle in jobHandles)
         {
             handle.Complete();
         }
+        jobHandles.Clear();
+
         foreach (Mesh m in _mesheEntitiesSet)
         {
             m.SetIndices(_indicesDict[m].AsArray(), MeshTopology.Points, 0);
         }
+
+        needUpdate = false;
     }
 
     [BurstCompile]
